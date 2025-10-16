@@ -8,7 +8,7 @@ Edition: 2025 Oct
 
 ### **Course Overview**
 
-This hands-on workshop is designed to introduce PhD students and young researchers the fundamentals of using SQL within the SAS Studio environment on WRDS (Wharton Research Data Services). Participants will learn how to write and execute basic SQL queries, navigate the WRDS database structure, and extract and manipulate data relevant to empirical research in accounting and finance.
+This hands-on workshop is designed to introduce PhD students and young researchers the fundamentals of using SQL within the [SAS Studio](https://wrds-cloud.wharton.upenn.edu/SASStudio/) environment on Wharton Research Data Services (WRDS). Participants will learn how to write and execute basic SQL queries, navigate the WRDS database structure, and extract and manipulate data relevant to empirical research in accounting and finance.
 
 The session will bridge the gap between data access and empirical implementation by demonstrating how to use SQL to partially replicate main results from [one of my papers](https://doi.org/10.1111/1475-679X.12486). The goal is to equip participants with the tools and confidence to independently query large datasets, automate data extraction and cleaning, and accelerate their research workflow.
 
