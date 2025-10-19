@@ -75,7 +75,7 @@ proc sql;
 			MIN(at) AS MinAT,
 			MAX(at) AS MaxAT,
 			SUM(sale) AS TotalSales 
-		FROM Comp4 
+		FROM Comp3 
 		GROUP BY gvkey 
 		ORDER BY gvkey;
 quit;
@@ -86,13 +86,13 @@ quit;
 proc sql;
 	CREATE TABLE Comp6 AS 
 		SELECT gvkey, fyear, at 
-		FROM Comp2
+		FROM Comp3
 		WHERE fyear <= 2022
 		ORDER BY gvkey, fyear;
 	
 	CREATE TABLE Comp7 AS 
 		SELECT gvkey, fyear, sale 
-		FROM Comp2
+		FROM Comp3
 		WHERE fyear >= 2021
 		ORDER BY gvkey, fyear;
 	
@@ -114,7 +114,7 @@ proc sql;
 		SELECT a.*, 
 			b.at AS Lag_Asset,
 			(a.at + b.at) / 2 AS Avg_Asset
-		FROM Comp4 AS a LEFT JOIN Comp4 AS b 
+		FROM Comp3 AS a LEFT JOIN Comp3 AS b 
 			ON a.gvkey = b.gvkey
 			AND a.fyear = b.fyear + 1
 		ORDER BY gvkey, fyear;
@@ -138,14 +138,14 @@ proc sql;
 
     CREATE TABLE ccm AS
 		SELECT a.gvkey, b.permno, a.* 
-		FROM Comp6 AS a INNER JOIN lnk AS b
+		FROM Comp3 AS a INNER JOIN lnk AS b
 		ON a.gvkey = b.gvkey
 			AND (b.linkdt <= a.datadate OR b.linkdt = .B) 
 			AND (a.datadate <= b.linkenddt OR b.linkenddt= .E);
 
     CREATE TABLE ccm AS 
 		SELECT a.gvkey, b.permno, a.* 
-		FROM Comp6 a, lnk b
+		FROM Comp3 a, lnk b
 		WHERE a.gvkey = b.gvkey
 			AND (b.linkdt <= a.datadate OR b.linkdt = .B) 
 			AND (a.datadate <= b.linkenddt OR b.linkenddt= .E);	
@@ -169,26 +169,26 @@ proc sql;
 			AND measure = "EPS"
 
 		ORDER BY ticker, anndats, measure, fpedats;
-quit();
+quit;
 
 /*# 4. Subquery*/
 
 proc sql;
-	CREATE TABLE Comp7 AS
+	CREATE TABLE Comp8 AS
 		SELECT DISTINCT *
 		FROM comp.company
 		WHERE gvkey IN (
 			SELECT gvkey
 			FROM comp.funda
-			WHERE fyear = 2020
+			WHERE fyear = 2024
 			AND at > 1000000)
 		ORDER BY gvkey;
 quit;
 
 proc sql;
-    CREATE TABLE ccm4 AS
+    CREATE TABLE ccm1 AS
 		SELECT a.gvkey, b.permno, a.* 
-		FROM Comp6 AS a 
+		FROM Comp3 AS a 
 			INNER JOIN 
 			(SELECT gvkey, lpermno AS permno, linkdt, linkenddt 
 				FROM crsp.ccmxpf_lnkhist
