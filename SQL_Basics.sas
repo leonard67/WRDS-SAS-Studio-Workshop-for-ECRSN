@@ -62,7 +62,7 @@ proc sql;
 		FROM Comp3
 		GROUP BY gvkey 
 		HAVING fyear = max(fyear)	/*keep one observation for each group*/
-		ORDER BY gvkey, fyear;
+		ORDER BY gvkey;
 quit;
 
 /*## 2.2. Aggregate Functions */
