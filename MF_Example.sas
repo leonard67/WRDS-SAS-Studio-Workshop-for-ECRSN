@@ -5,34 +5,38 @@
 /********************************************************************************/
 proc sql;
 
-	create table mf1 as select ticker, anndats format=DATE9., intnx('month',
-		mdy(prd_mon, 1, prd_yr),0,'e') as MF_datadate format=DATE9., pdicity,
-		case when (not missing(val_2)) then (val_1 + val_2) / 2 when
-		missing(val_2) then val_1 end as MF, mean_at_date as Consensus from
-		IBES.DET_GUIDANCE where year(anndats) between 2001 and 2019 and usfirm=1
-		and pdicity in ('ANN', 'QTR') and anndats <= CALCULATED MF_datadate and
-		not missing(val_1) and measure="EPS" order by ticker, anndats, measure,
-		MF_datadate, pdicity;
+	CREATE TABLE mf1 
+	AS SELECT ticker, anndats format=DATE9., 
+		INTNX('month', MDY(prd_mon, 1, prd_yr),0,'e') AS MF_datadate format=DATE9., 
+		pdicity,
+		CASE 
+			WHEN (not missing(val_2)) THEN (val_1 + val_2) / 2 
+			WHEN missing(val_2) THEN val_1 
+		END AS MF, mean_at_date AS Consensus 
+		FROM IBES.DET_GUIDANCE WHERE year(anndats) BETWEEN 2001 AND 2019 AND usfirm=1
+		AND pdicity IN ('ANN', 'QTR') AND anndats <= CALCULATED MF_datadate AND
+		NOT missing(val_1) AND measure="EPS" 
+		ORDER BY ticker, anndats, measure, MF_datadate, pdicity;
 
-	create table Act1 as select distinct ticker, intnx('month', pends, 0,'e') as
-		datadate format=DATE9., pdicity, value as Actual
-		label="Actual value from IBES" from IBES.ACT_EPSUS where year(pends) >=
-		2001 and usfirm=1 and not missing (value) and pdicity in ('ANN', 'QTR')
-		and measure="EPS" order by ticker, datadate, measure, pdicity;
+	CREATE TABLE Act1 AS SELECT DISTINCT ticker, INTNX('month', pends, 0,'e') AS
+		datadate format=DATE9., pdicity, value AS Actual label="Actual value from IBES" 
+		FROM IBES.ACT_EPSUS WHERE year(pends) >= 2001 AND usfirm=1 AND NOT missing (value) 
+		AND pdicity IN ('ANN', 'QTR') AND measure="EPS" 
+		ORDER BY ticker, datadate, measure, pdicity;
 
 	/* Merge Actual Values */
-	create table mf2 as select a.*, b.Actual from mf1 a left join Act1 b on
-		a.ticker=b.ticker and a.pdicity=b.pdicity and a.MF_datadate=b.datadate;
+	CREATE TABLE mf2 AS SELECT a.*, b.Actual FROM mf1 a LEFT JOIN Act1 b ON
+		a.ticker=b.ticker AND a.pdicity=b.pdicity AND a.MF_datadate=b.datadate;
 
 	/* Drop dulicate MFs */
-	create table mf3 as select *, missing(Consensus) as mark, abs(MF - Actual)
-		as Error from mf2 order by ticker, anndats, MF_datadate, pdicity, mark,
+	CREATE TABLE mf3 AS SELECT *, missing(Consensus) AS mark, ABS(MF - Actual)
+		AS Error FROM mf2 ORDER BY ticker, anndats, MF_datadate, pdicity, mark,
 		Error;
 
-	create table MF_Raw (drop=mark Error) as select distinct monotonic() as N, *
-		from mf3 group by ticker, anndats, MF_datadate, pdicity having N=min(N)
-		order by N;
+	CREATE TABLE MF_Raw (drop=mark Error) AS SELECT DISTINCT monotonic() AS N, *
+		FROM mf3 GROUP BY ticker, anndats, MF_datadate, pdicity HAVING N=min(N)
+		ORDER BY N;
 
-	drop table mf1, mf2, mf3, Act, Act1;
+	DROP TABLE mf1, mf2, mf3, Act, Act1;
 
 quit;

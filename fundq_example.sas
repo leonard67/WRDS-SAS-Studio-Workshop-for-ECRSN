@@ -1,76 +1,76 @@
 /*********************************************************************************/
 /**************Example Code for ECRSN.com Workshop *******************************/
-/****************by Leonard Li (UNSW Sydney)**************************************/
+/****************BY Leonard Li (UNSW Sydney)**************************************/
 
 /*********************************************************************************/
 proc sql;
-	create table link as select * from crsp.ccmxpf_lnkhist where linktype in
-		("LU", "LC", "LS") and not missing(lpermno) and not missing(gvkey) order
-		by gvkey, linkdt;
+	CREATE TABLE link AS SELECT * FROM crsp.ccmxpf_lnkhist WHERE linktype IN
+		("LU", "LC", "LS") AND NOT MISSING(lpermno) AND NOT MISSING(gvkey) ORDER
+		BY gvkey, linkdt;
 
-	create table Comp1 as select gvkey, fyearq as fyear, fqtr, cusip,
-		intnx('month', datadate,0,'e') as datadate format=DATE9., intnx('month',
-		datadate,3,'e') as fdate format=DATE9., rdq format=DATE9., atq, ceqq,
-		saleq, prccq, prccq*cshoq as MV, log(atq) as Size label="Log at",
-		prccq*cshoq / ceqq as MB label="prcc*csho / ceq", sum(missing(CALCULATED
-		MV), missing(CALCULATED MB),missing(ceqq)) as mis from comp.fundq where
-		year(datadate) between 2000 and 2020 and datafmt="STD" and consol="C"
-		and popsrc="D" and not missing(atq) and atq > 0 and not missing(fqtr);
+	CREATE TABLE Comp1 AS SELECT gvkey, fyearq AS fyear, fqtr, cusip,
+		intnx('month', datadate,0,'e') AS datadate format=DATE9., intnx('month',
+		datadate,3,'e') AS fdate format=DATE9., rdq format=DATE9., atq, ceqq,
+		saleq, prccq, prccq*cshoq AS MV, log(atq) AS Size label="Log at",
+		prccq*cshoq / ceqq AS MB label="prcc*csho / ceq", sum(MISSING(CALCULATED
+		MV), MISSING(CALCULATED MB),MISSING(ceqq)) AS mis FROM comp.fundq WHERE
+		year(datadate) BETWEEN 2000 AND 2020 AND datafmt="STD" AND consol="C"
+		AND popsrc="D" AND NOT MISSING(atq) AND atq > 0 AND NOT MISSING(fqtr);
 
-	create table Comp2 as select a.*, b.lpermno as permno, case b.linkprim when
-		'P' then 1 when 'C' then 2 when 'J' then 3 when 'N' then 4 end as mark1,
-		case b.linktype when "LU" then 1 when "LC" then 2 when "LS" then 3 end
-		as mark2 from Comp1 a, link b where a.gvkey=b.gvkey and (b.linkdt <=
-		a.datadate or b.linkdt=.B) and (a.datadate <= b.linkenddt or
-		b.linkenddt=.E) order by a.gvkey, fyear, fqtr, mis, mark1, mark2,
-		permno, datadate desc;
+	CREATE TABLE Comp2 AS SELECT a.*, b.lpermno AS permno, CASE b.linkprim WHEN
+		'P' THEN 1 WHEN 'C' THEN 2 WHEN 'J' THEN 3 WHEN 'N' THEN 4 END AS mark1,
+		CASE b.linktype WHEN "LU" THEN 1 WHEN "LC" THEN 2 WHEN "LS" THEN 3 END
+		AS mark2 FROM Comp1 a, link b WHERE a.gvkey=b.gvkey AND (b.linkdt <=
+		a.datadate OR b.linkdt=.B) AND (a.datadate <= b.linkenddt OR
+		b.linkenddt=.E) ORDER BY a.gvkey, fyear, fqtr, mis, mark1, mark2,
+		permno, datadate DESC;
 
-	create table Comp3 (drop=N) as select distinct*, monotonic() as N from Comp2
-		group by gvkey, fyear, fqtr having N=min(N);
+	CREATE TABLE Comp3 (drop=N) AS SELECT distinct*, monotonic() AS N FROM Comp2
+		GROUP BY gvkey, fyear, fqtr HAVING N=min(N);
 
-	create table Comp4 as select * from Comp3 order by gvkey, datadate, mis,
-		mark1, mark2, permno, fyear desc, fqtr desc;
+	CREATE TABLE Comp4 AS SELECT * FROM Comp3 ORDER BY gvkey, datadate, mis,
+		mark1, mark2, permno, fyear DESC, fqtr DESC;
 
-	create table Comp5 (drop=mis mark1 mark2) as select distinct monotonic() as
-		N, * from Comp4 group by gvkey, datadate having N=min(N);
+	CREATE TABLE Comp5 (drop=mis mark1 mark2) AS SELECT distinct monotonic() AS
+		N, * FROM Comp4 GROUP BY gvkey, datadate HAVING N=min(N);
 
 	/*Merge IBES TICKER********************************************************************************************************************************/
-	create table Comp6 as select a.gvkey, b.ticker as ticker, a.*, b.fdate as
-		begdate format=DATE9., b.ldate as enddate format=DATE9. from Comp5 a
-		left join cibeslnk b on a.gvkey=b.gvkey and a.permno=b.permno and
-		(b.fdate <= a.datadate or b.fdate=.B) and (a.datadate <= b.ldate or
-		b.ldate=.E) order by N, missing(ticker), enddate desc, begdate desc;
+	CREATE TABLE Comp6 AS SELECT a.gvkey, b.ticker AS ticker, a.*, b.fdate AS
+		begdate format=DATE9., b.ldate AS enddate format=DATE9. FROM Comp5 a
+		LEFT JOIN cibeslnk b on a.gvkey=b.gvkey AND a.permno=b.permno AND
+		(b.fdate <= a.datadate or b.fdate=.B) AND (a.datadate <= b.ldate or
+		b.ldate=.E) ORDER BY N, MISSING(ticker), enddate DESC, begdate DESC;
 
-	create table Comp7 (drop=begdate enddate N1) as select distinct *,
-		monotonic() as N1 from Comp6 (where=(not missing(ticker))) group by N
-		having N1=min(N1);
+	CREATE TABLE Comp7 (drop=begdate enddate N1) AS SELECT distinct *,
+		monotonic() AS N1 FROM Comp6 (WHERE=(NOT MISSING(ticker))) GROUP BY N
+		HAVING N1=min(N1);
 
 	/**Merge EA Date*******************************************************************************************************************************/
-	create table Comp8 as select a.*, b.anndats as IBES_EA format=DATE9.,
-		b.value as IBES_EPS, b.actdats, case when b.anndats < a.rdq+14 then
-		abs(b.anndats - a.rdq) else 99 end as mark1, case when (b.pdicity="ANN"
-		and fqtr=4) or (b.pdicity="QTR" and fqtr ne 4) then 1 else 2 end as
-		mark2 from Comp7 as a left join ibes.act_epsus (where=(not
-		missing(value))) as b on a.ticker=b.ticker and a.datadate=b.pends and
-		b.anndats < a.fdate order by N, mark1, mark2, missing(IBES_EPS), actdats
-		desc;
+	CREATE TABLE Comp8 AS SELECT a.*, b.anndats AS IBES_EA format=DATE9.,
+		b.value AS IBES_EPS, b.actdats, CASE WHEN b.anndats < a.rdq+14 THEN
+		abs(b.anndats - a.rdq) else 99 end AS mark1, CASE WHEN (b.pdicity="ANN"
+		AND fqtr=4) or (b.pdicity="QTR" AND fqtr ne 4) THEN 1 else 2 end AS
+		mark2 FROM Comp7 AS a LEFT JOIN ibes.act_epsus (WHERE=(NOT
+		MISSING(value))) AS b on a.ticker=b.ticker AND a.datadate=b.pends AND
+		b.anndats < a.fdate ORDER BY N, mark1, mark2, MISSING(IBES_EPS), actdats
+		DESC;
 
-	create table Comp9 (drop=rdq N N1 actdats IBES_EA IBES_EPS mark1 mark2) as
-		select distinct *, case when not missing(IBES_EA) then IBES_EA when
-		missing(IBES_EA) and not missing(rdq) and rdq < fdate then rdq end as
-		EA_date format=DATE9., monotonic() as N1 from Comp8 group by N having N1
+	CREATE TABLE Comp9 (drop=rdq N N1 actdats IBES_EA IBES_EPS mark1 mark2) AS
+		SELECT distinct *, CASE WHEN NOT MISSING(IBES_EA) THEN IBES_EA WHEN
+		MISSING(IBES_EA) AND NOT MISSING(rdq) AND rdq < fdate THEN rdq end AS
+		EA_date format=DATE9., moNOTonic() AS N1 FROM Comp8 GROUP BY N HAVING N1
 		=min(N1);
 
-	create table Comp10 as select a.*, b.EA_date as F_EA_date from Comp9 a left
-		join Comp9 b on a.gvkey=b.gvkey and intck('month',a.datadate,b.datadate)
+	CREATE TABLE Comp10 AS SELECT a.*, b.EA_date AS F_EA_date FROM Comp9 AS a LEFT
+		JOIN Comp9 b ON a.gvkey=b.gvkey AND intck('month',a.datadate,b.datadate)
 		=3;
 
-	create table Comp_Quarter as select a.gvkey, a.permno, a.ticker, a.cusip,
+	CREATE TABLE Comp_Quarter AS SELECT a.gvkey, a.permno, a.ticker, a.cusip,
 		a.fyear, a.fqtr, a.datadate, a.EA_date, a.F_EA_date, a.fdate, a.*,
-		input(b.sic, best.) as sicc, input(b.cik, best.) as CIK_Comp, b.state as
-		State_Comp from Comp10 a left join comp.company b on a.gvkey=b.gvkey;
+		input(b.sic, best.) AS sicc, input(b.cik, best.) AS CIK_Comp, b.state AS
+		State_Comp FROM Comp10 a LEFT JOIN comp.company b ON a.gvkey=b.gvkey;
 
-	drop table Comp1, Comp2, Comp3, Comp4, Comp5, Comp6, Comp7, Comp8, Comp9,
+	DROP TABLE Comp1, Comp2, Comp3, Comp4, Comp5, Comp6, Comp7, Comp8, Comp9,
 		Comp10, iclink, link;
 
 quit;
