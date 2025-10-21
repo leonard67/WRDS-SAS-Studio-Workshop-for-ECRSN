@@ -12,6 +12,9 @@ This hands-on workshop is designed to introduce PhD students and young researche
 
 The session will bridge the gap between data access and empirical implementation by demonstrating how to use SQL to partially replicate main results from [one of my papers](https://doi.org/10.1111/1475-679X.12486). The goal is to equip participants with the tools and confidence to independently query large datasets, automate data extraction and cleaning, and accelerate their research workflow.
 
+I will first go through the basic syntax of SQL using the [SQL_Basics](./SQL_Basics.sas) file. Then I will show the codes of partially replicating my paper using the [Example_Codes](Example_Codes.sas) file.
+
+
 ---
 
 ### **Learning Outcomes**
